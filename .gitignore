@@ -66,3 +66,11 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# IDA Pro databases
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+*.idb
