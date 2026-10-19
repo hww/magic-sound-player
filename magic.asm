@@ -1,5 +1,5 @@
 ; =============================================================================
-; MAGIC SOUND ó STM player for ALESTE MC 520 EX
+; MAGIC SOUND ù STM player for ALESTE MC 520 EX
 ; =============================================================================
 ; Build: sjasmplus --raw=magic.com magic.asm
 ; 
@@ -128,7 +128,7 @@ start:
                 call    init_div                ; precompute per-instrument divisors
                 call    init_screen             ; init screen mode and VU-meter
                 call    sub_2E0                 ; init marquee positions
-                ld      hl, demo_text
+                ld      hl, wrap_text
                 ld      (D_POINT2), hl          ; start of the marquee text
                 call    set_interrupt_hook      ; hook INT 38h and NMI
 
@@ -182,7 +182,7 @@ update_player:
                 inc     hl
                 or      a
                 jr      nz, loc_170
-                ld      hl, 11BBh                  ; wrap to start of text
+                ld      hl, wrap_text              ; wrap to start of text
                 ld      a, (hl)
 
 loc_170:
@@ -2450,9 +2450,9 @@ init_screen:
                 ld      ix, 0C6h
                 ld      iy, 800h
                 call    1Ch
-                ld      de, 0F16h
+                ld      de, demo_text
                 call    print_string               ; print "Loading : "
-                ld      hl, 11B2h
+                ld      hl, wrap_demo_text
                 ld      b, 9
 
 loc_EAC:
@@ -2487,6 +2487,7 @@ loc_EB3:
 ; End of function init_screen
 
 ; ---------------------------------------------------------------------------
+; Print error requires $ terminator not 0
 bad_number_message:
                 db      0EEh
                 db      0C5h
@@ -2508,6 +2509,7 @@ bad_number_message:
                 db      0D2h
                 db      20h
                 db      24h
+; Print error requires $ terminator not 0
 bad_version_message:
                 db      0EEh
                 db      0C5h
@@ -2536,6 +2538,7 @@ bad_version_message:
                 db      0C9h
                 db      20h
                 db      24h
+; Seems requires $ terminator not 0
 loading_message:
                 db      4Ch
                 db      6Fh
@@ -2548,7 +2551,7 @@ loading_message:
                 db      3Ah
                 db      20h
                 db      24h
-demo_text_info:
+demo_text:
                 db      0Dh
                 db      0Ah
                 db      1Bh
@@ -3217,6 +3220,7 @@ demo_text_info:
                 db      20h
                 db      20h
                 db      0
+wrap_demo_text:                
                 db      10h
                 db      11h
                 db      15h
@@ -3226,7 +3230,7 @@ demo_text_info:
                 db      3Ah
                 db      3Bh
                 db      3Fh
-demo_text:
+wrap_text:
                 db      30h, 31h,  22h, 13h, 3, 7, 0Ah, 0Bh, 0Ch, 1Ch, 28h, 34h, 0
 vibrato_table:
             DB      000h, 000h, 018h, 000h, 031h, 000h, 04Ah, 000h
