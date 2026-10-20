@@ -4,7 +4,12 @@
 ; Build: sjasmplus --raw=magic.com magic.asm
 ; 
 ; This is a fully annotated disassembly of the Magic Sound player.
-; It is 100% byte-identical to the original mag.com.
+; The code logic matches the original MAG.COM. The rebuilt binary is
+; functionally identical but NOT byte-for-byte identical, because the
+; messages were translated from Russian (KOI-8) to English (which shifts
+; the addresses pointing to them), and the module title is copied with
+; 20 bytes instead of 19 (LD BC,14h vs LD BC,13h at 0CB5h).
+; See docs/review-2026-10.md for a detailed comparison.
 ; =============================================================================
 
 ; =============================================================================
@@ -554,8 +559,11 @@ loc_367:
 ;   void ma_start(chan_t *c, int stop, int dma, int tim,
 ;                 int dst, uint8_t bmod, int pvol, int dmap) {
 ;       if (c->force_off) {                // F_CH_ON
-;           out(DMAMASK, stop);
-;           out(pvol, 0x40);               // silence
+;           // NOTE: the original does NOT write to DMAMASK here.
+;           // LD BC,DMAMASK is immediately overwritten by LD BC,VOL_x,
+;           // so the DMA mask write is effectively skipped (same as in
+;           // mag.txt, where the corresponding OUT is commented out).
+;           out(pvol, 0);                  // silence: volume = 0
 ;           goto done;
 ;       }
 ;       if (c->start) {                    // F_START
@@ -573,9 +581,15 @@ loc_367:
 ;       }
 ;       if (c->vol) {                      // F_VOL
 ;           uint8_t v = c->sng_vol;
-;           if (v == 0 || v == 1) v = 0x40; // special "max" value
-;           out(pvol, v);
-;           v &= 0x3F;
+;           // Volume written is (v - 1) * 4, minimum 0:
+;           //   SUB 1 / JR Z / JR NC / LD A,0 / SLA A / SLA A / OUT
+;           uint8_t out_v;
+;           if (v == 0) out_v = 0;
+;           else        out_v = (uint8_t)((v - 1) << 2);
+;           out(pvol, out_v);
+;
+;           // The VU-meter peak uses the low 6 bits of out_v:
+;           v = out_v & 0x3F;
 ;           if (v > c->peak) c->peak = v;  // PIK_VOL for the VU-meter
 ;       }
 ;       if (c->start) {
@@ -1078,9 +1092,12 @@ int_hook_buffer:
 ; Pattern row format (4 bytes per channel, 4 channels = 16 bytes per row):
 ;   byte 0: note byte (with octave in high nibble; 0xFF = no note,
 ;           0xFE = key off)
-;   byte 1: bits 7..3 = instrument number, bits 2..0 = high 3 bits of volume
-;   byte 2: bits 7..3 = low 5 bits of volume, bits 3..0 = command
+;   byte 1: bits 7..3 = instrument number, bits 2..0 = LOW 3 bits of volume
+;   byte 2: bits 7..4 = HIGH 4 bits of volume, bits 3..0 = command
 ;   byte 3: command parameter
+;
+; Volume is 7 bits total (0..64), assembled as:
+;   volume = (byte1 AND 7) OR ((byte2 RRCA) AND 78h)
 ; -----------------------------------------------------------------------------
 next_note:
                 inc     (ix+PAT_POINT)

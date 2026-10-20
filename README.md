@@ -23,6 +23,7 @@ The source in this repository is a **fully annotated disassembly** of the origin
   - [Verification](#verification)
   - [Limitations](#limitations)
   - [References](#references)
+  - [Fidelity to the original](#fidelity-to-the-original)
 
 ---
 
@@ -211,6 +212,22 @@ A silent `cmp` (or the printed message) confirms that the assembled binary match
 - **sjasmplus** — Z80 cross-assembler: <https://github.com/z00m128/sjasmplus>
 - **DskTool** — MSX-DOS disk-image tool (see installation section above).
 - **Caprice32 Aleste** — cycle-accurate Aleste emulator.
+
+---
+
+## Fidelity to the original
+
+The code logic in `magic.asm` matches the original `MAG.COM`. The rebuilt
+`magic.com` is **functionally identical** to `MAG.COM`, but it is **not
+byte-for-byte identical**:
+
+- The messages have been translated from Russian (KOI-8) to English,
+  which changes their length and shifts the addresses that point to them.
+- The module title is copied with 20 bytes instead of 19
+  (`LD BC,14h` vs `LD BC,13h` at `0CB5h`).
+
+See [docs/review-2026-10.md](docs/review-2026-10.md) for a detailed
+comparison.
 
 ---
 
